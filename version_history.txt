@@ -1,0 +1,26 @@
+ECE2049 Lab 0 (Demo) Template
+Version history
+v2.0.3 - 9 Jan 2019, sjarvis
+  - Updated to CCS 8.1
+v2.0.2 - 22 Aug 2018, sjarvis
+  - Fixed peripherals.h and update for CCS as installed in AK-113
+v2.0.1 - 14 Jan 2018, sjarvis
+  - Reorganization and some variable names for cleaning demo lab
+v2.0beta1 - 7 July 2017, ndemarinis
+  - Updated grlib includes and static library for compatibility
+    with CCSv7
+  - Removed include path for MSP430Ware, which is no longer required
+v1.4 - 16 May 2017, ndemarinis
+  - Minor syntax updates for E17
+v1.3 - 20 Aug 2016, ndemarinis
+  - Added 90 degree rotation support for LCD (sans image support),
+    adjustable with ROTATE_90 definition in Sharp96x96.h
+  - Added #include <msp430.h> to main.c
+v1.2 - 20 Jun 2016, ndemarinis
+  - Corrected project environment variables to support
+    compilation on both Windows and Linux
+v1.1 - 20 May 2016, ndemarinis
+  - Prep for E term 2016
+  - Added extra comments about display clear and flush
+v1.0 - Jan 2016, sjarvis   
+  - Initial version
