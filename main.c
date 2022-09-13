@@ -10,6 +10,10 @@
  * You include the header associated with that file(s)
  * into the main file of your project. */
 #include "peripherals.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 // Function Prototypes
 void swDelay(char numLoops);
@@ -18,9 +22,14 @@ void makeArray();
 void drawAliens(); 
 void moveAliens(); 
 
+unsigned char currKey = 0 
+int level = 1 
+int randArray [6] = {}; 
+int location = 8; 
+int locationArray = [10] {5, 15, 25, 35, 45, 55, 65, 75, 85, 95};
+
 
 //Functions 
-
 //Waits for the * button to be pressed 
 void startGame(){
     while(1){
@@ -154,12 +163,6 @@ enum GAME_STATE
 enum GAME_STATE game_state = START_SCREEN; // set initial switch case to the start screen
 */
 // Declare globals here
-unsigned char currKey = 0 
-int level = 1 
-int randArray [6] = {}; 
-int location = 8; 
-int locationArray = [10] {5, 15, 25, 35, 45, 55, 65, 75, 85, 95};
-
 
 
 // Main
