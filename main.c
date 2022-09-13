@@ -13,8 +13,131 @@
 
 // Function Prototypes
 void swDelay(char numLoops);
+void startGame(); 
+void makeArray(); 
+void drawAliens(); 
+void moveAliens(); 
 
-// Enumerations and Class Objects
+
+//Functions 
+
+//Waits for the * button to be pressed 
+void startGame(){
+    while(1){
+        currKey = getKey();
+        if (currKey == '*'){
+            return;
+        }
+    }
+}
+
+//Makes the array 
+void makeArray() {
+    int j;
+    for(j = 0; j < level; j++) {
+        int n1;
+        n1 = (rand() % 5) + 1;
+        int k;
+        int cond;
+        cond = 1;
+        while (cond != 0){
+            cond = 0;
+            for (k = 0; k < j; k++){
+                cond = cond + (n1 == randArray[k]);
+            }
+            if (cond != 0)
+                n1 = (rand() % 5) + 1;
+        }
+        randArray[j] = n1;
+    }
+    return;
+}
+
+//Sets the aliens as numbers (still working on making them rectangles)
+void drawAliens(){
+
+    int i, current = 0;
+    for(i = 0; i < level; i++){
+        //randArray[i] = (rand() % 6) + 1;
+        current = randArray[i];
+        if(current == 1){
+            //Graphics_drawCircle(&g_sContext, 5, location, 6);
+            Graphics_drawStringCentered(&g_sContext, "1", AUTO_STRING_LENGTH, 5, location, TRANSPARENT_TEXT);
+            //Graphics_flushBuffer(&g_sContext);
+        }
+        if(current == 2){
+            //Graphics_drawCircle(&g_sContext, 5, location, 6);
+            Graphics_drawStringCentered(&g_sContext, "2", AUTO_STRING_LENGTH, 20, location, TRANSPARENT_TEXT);
+            //Graphics_flushBuffer(&g_sContext);
+        }
+        if(current == 3){
+            //Graphics_drawCircle(&g_sContext, 5, location, 6);
+            Graphics_drawStringCentered(&g_sContext, "3", AUTO_STRING_LENGTH, 39, location, TRANSPARENT_TEXT);
+            //Graphics_flushBuffer(&g_sContext);
+        }
+        if(current == 4){
+            //Graphics_drawCircle(&g_sContext, 56, location, 6);
+            Graphics_drawStringCentered(&g_sContext, "4", AUTO_STRING_LENGTH, 56, location, TRANSPARENT_TEXT);
+            //Graphics_flushBuffer(&g_sContext);
+        }
+        if(current == 5){
+            //Graphics_drawCircle(&g_sContext, 5, location, 6);
+            Graphics_drawStringCentered(&g_sContext, "5", AUTO_STRING_LENGTH, 73, location, TRANSPARENT_TEXT);
+            //Graphics_flushBuffer(&g_sContext);
+        }
+        if(current == 6){
+            //Graphics_drawCircle(&g_sContext, 5, location, 6);
+            Graphics_drawStringCentered(&g_sContext, "6", AUTO_STRING_LENGTH, 95, location, TRANSPARENT_TEXT);
+            //Graphics_flushBuffer(&g_sContext);
+        }
+        Graphics_flushBuffer(&g_sContext);
+    }
+    return;
+}
+
+void moveAliens(){
+    int row = 0;
+    int newArray[6] = {};
+    char key[1];
+    while (row < 9) {
+        location = location + 9;
+        Graphics_clearDisplay(&g_sContext);
+        //drawAliens();
+        //int rate = 11;
+        unsigned int k = 0;
+        //while (k <= rate) {
+        int rate = 6  - level;
+        for (k = 0; k <= rate*10; k++) {
+            drawAliens();
+            char key[1];
+            key[0] = getKey();
+            unsigned int keyPressed = atoi(key);
+            int x = 0;
+            int n;
+            for (n = 0; n < level; n++) {
+                if (randArray[n] != keyPressed) {
+                    newArray[x] = randArray[n];
+                    x++;
+                }
+            }
+            int c;
+           for (c = 0; c < 6; c++) {
+               randArray[c] = newArray[c];
+               newArray[c] = 0;
+           }
+            //k = k+1;
+            //rate = rate - 2;
+        }
+        row++;
+    }
+    return;
+}
+
+
+
+
+
+/* Enumerations and Class Objects
 enum GAME_STATE
   {
     START_SCREEN,
@@ -29,23 +152,37 @@ enum GAME_STATE
   };
 //
 enum GAME_STATE game_state = START_SCREEN; // set initial switch case to the start screen
-//
+*/
 // Declare globals here
+unsigned char currKey = 0 
+int level = 1 
+int randArray [6] = {}; 
+int location = 8; 
+int locationArray = [10] {5, 15, 25, 35, 45, 55, 65, 75, 85, 95};
+
+
 
 // Main
 void main(void)
 
 {
-    unsigned char currKey=0;
-    unsigned char dispThree[3];
+     unsigned char dispSz[3];
+     unsigned char dispThree[3];
+     time_t t; 
+     int isEmpty = 5; 
+     int f = 0 
+     int e = 0
+     int c = 0 
+
     // int32_t textSize = 40;
+   
 
 
     // Define some local variables
-
     long int n = 0;
     long int incr = 0;
     volatile unsigned int i;
+    long unsigned int somethingFun = 0x2121;
 //    float a_flt = 190.68;
 //    float  test = 0x0600, i=0;     // In C prefix 0x means the number that follows is in hex
 //    long unsigned X= 123456;    // No prefix so number is assumed to be in decimal
@@ -68,7 +205,7 @@ void main(void)
 //    test = test-myGrade;    // A number minus a letter?? What's actually going on here?
                             // What value stored in myGrade (i.e. what's the ASCII code for "A")?
                             // Thus, what is the new value of test? Explain?
-
+    initLeds()
     // Useful code starts here
     initLeds();
     configDisplay();
@@ -77,9 +214,157 @@ void main(void)
     // *** Screen ***
     Graphics_clearDisplay(&g_sContext); // Clear the display
 
-    switch(game_state) {
+    
+    /*----------------------------------------STATE MACHINE NOTES-----------------------------------------------
+    CASE 0: Start Screen 
+    CASE 1: Countdown
+    CASE 2: Levels
+    CASE 3: You win Screen
+    CASE 4: You Lose Screen 
+    */
+   
+   dispThree [0]; 
+   dispThree [2]; 
+   int state = 0; 
+   srand ((unsigned)time(&t)); 
 
-    case START_SCREEN: // Display welcome screen
+   while (1) {// Forever loop to start State machine...
+ 
+    switch(state) {
+        case 0: // Welcome Screen
+        Graphics_drawStringCentered(&g_sContext, "SPACE INVADERS", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+        Graphics_drawStringCentered(&g_sContext, "Press * to Start", AUTO_STRING_LENGTH, 48, 56, TRANSPARENT_TEXT);
+        Graphics_flushBuffer(&g_sContext);
+        swDelay(5);
+        startGame(); 
+        // Graphics_clearDisplay(&g_sContext); // Clear the display
+        state++
+        break; 
+
+        case 1: //Countdown
+              Graphics_drawStringCentered(&g_sContext, "Ready?", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+              Graphics_flushBuffer(&g_sContext);
+              swDelay(5);
+              Graphics_clearDisplay(&g_sContext); // Clear the display
+
+                 if (n < 10) {
+                   Graphics_drawStringCentered(&g_sContext, "3!", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+                  Graphics_flushBuffer(&g_sContext);
+
+                 }
+                else if ((n > 10) && (n < 20)) {
+                   Graphics_drawStringCentered(&g_sContext, "2!", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+                   Graphics_flushBuffer(&g_sContext);
+                   dispThree[0] = ' ';
+                  dispThree[2] = ' ';
+                }
+                else if (n > 20 && n < 30) {
+                   Graphics_drawStringCentered(&g_sContext, "1!", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+                   Graphics_flushBuffer(&g_sContext);
+                   dispThree[0] = ' ';
+                   dispThree[2] = ' ';
+                }
+                else if (n > 30) {
+                    state = case 2;
+                }
+
+                 n = n + 1;
+
+                if (state == case 2){
+                     n = 0;
+                } 
+        break; 
+
+        case 2: 
+        for (f = 0; f < 6; f++) {
+                randArray[f] = 0;
+           }
+           location = 8;
+           makeArray();
+           unsigned int k = 0;
+           drawAliens();
+           while(k <= 50000) {
+               k++;
+           }
+           state++;
+        break; 
+
+        case 3: 
+        moveAliens();
+           for (e = 0; e < 6; e++) {
+               if (randArray[e] != 0) {
+                isEmpty = 0;   //array is not all zero
+                break;
+               }
+               else {
+                   isEmpty = 1; //array is all zero
+               }
+           }
+           if (location == 95 && isEmpty == 0) {
+               state++;
+           }
+           else if (location == 95 && isEmpty == 1) {
+               if (level < 6) {
+
+                   Graphics_clearDisplay(&g_sContext);
+                   Graphics_drawStringCentered(&g_sContext, "Next Level!", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+                   Graphics_flushBuffer(&g_sContext);
+                   swDelay(3);
+                   Graphics_clearDisplay(&g_sContext);
+                   level++;
+                   state = 2;
+               }
+               else {
+                   BuzzerOn();
+                   setLeds(15);
+                   Graphics_clearDisplay(&g_sContext);
+                   Graphics_drawStringCentered(&g_sContext, "YOU WON!", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+                   Graphics_flushBuffer(&g_sContext);
+                   swDelay(3);
+                   Graphics_clearDisplay(&g_sContext);
+                   BuzzerOff();
+                   LedOff();
+                   level = 1;
+                   state = 0;
+               }
+           }
+        break; 
+
+        case 4: 
+        Graphics_clearDisplay(&g_sContext); // Clear the display
+           k = 0;
+           while (k < 10) {
+               setLeds(15);
+               BuzzerOn();
+               Graphics_drawStringCentered(&g_sContext, "You Suck", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+               Graphics_flushBuffer(&g_sContext);
+               k++;
+           }
+           for (c = 0; c < 6; c++) {
+               randArray[c] = 0;
+          }
+           location = 8;
+           BuzzerOff();
+           LedOff();
+           state = 0;
+           level = 1;
+           break;
+    }
+}// end while loop 
+}// End main 
+
+
+
+
+
+
+
+
+
+
+//-------------------------------------------------------------OLD STATE MACHINE-----------------------------------------------------------------------------
+   /*  switch(game_state) {
+           case START_SCREEN: // Display welcome screen
     
         Graphics_drawStringCentered(&g_sContext, "SPACE INVADERS", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
         Graphics_drawStringCentered(&g_sContext, "Press * to Start", AUTO_STRING_LENGTH, 48, 56, TRANSPARENT_TEXT);
@@ -103,7 +388,7 @@ void main(void)
 
     case COUNTDOWN: // Intermediate state before level 1
     
-        Graphics_drawStringCentered(&g_sContext, "GOT HERE", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
+        Graphics_drawStringCentered(&g_sContext, "Ready?", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
         Graphics_flushBuffer(&g_sContext);
         swDelay(5);
         Graphics_clearDisplay(&g_sContext); // Clear the display
@@ -322,7 +607,7 @@ void main(void)
 //    }  // end while (1)
 }
 
-
+*/
 void swDelay(char numLoops)
 {
 	// This function is a software delay. It performs
