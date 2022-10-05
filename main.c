@@ -569,3 +569,15 @@ void buzzerOff()
     TB0CCTL0 = 0;
     TB0CCTL5 = 0;
 }
+
+unsigned char getButtonState()
+{
+    unsigned char ret = 0x00;
+    // P2.1
+    if (~P2IN & BIT1)
+        ret |= BIT0; // Left button (S1)
+    // P1.1
+    if (~P1IN & BIT1)
+        ret |= BIT1; // Right button (S2)
+    return ret;
+}
