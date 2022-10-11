@@ -3,343 +3,410 @@
 /***************************************************/
 
 #include <msp430.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <inc/peripherals.h>
+#include <inc/ADC.h>
+#include <main.h>
+#include <inc/time.h>
 
-/* Peripherals.c and .h are where the functions that implement
- * the LEDs and keypad, etc are. It is often useful to organize
- * your code by putting like functions together in files.
- * You include the header associated with that file(s)
- * into the main file of your project. */
-#include "peripherals.h"
-
-// Function Prototypes
-void swDelay(char numLoops);
-
-// Enumerations and Class Objects
-enum GAME_STATE
-  {
-    START_SCREEN,
-    COUNTDOWN,
-    LEVEL_1,
-    LEVEL_2,
-    LEVEL_3,
-    LEVEL_4,
-    LEVEL_5,
-    WIN_SCREEN,
-    DEATH_SCREEN
-  };
-//
-enum GAME_STATE game_state = START_SCREEN; // set initial switch case to the start screen
-//
-// Declare globals here
-
-// Main
-void main(void)
-
+// States utilized in main program state machine
+typedef case State
 {
-    unsigned char currKey=0;
-    unsigned char dispThree[3];
-    // int32_t textSize = 40;
+    DISPLAY, WAIT_FOR_TRANSITION, BEGIN_EDIT, DRAW_EDIT, EDIT
+} State;
 
+// States used in display screen
+typedef case 0 //DisplayState 
+{
+    DATE, TIME, TEMP_C, TEMP_F
+} DisplayState;
 
-    // Define some local variables
+// States used in edit screen
+typedef case 1 //EditState
+{
+    MONTH, DAY, HOUR, MINUTE, SECOND
+} EditState;
 
-    long int n = 0;
-    long int incr = 0;
-    volatile unsigned int i;
-//    float a_flt = 190.68;
-//    float  test = 0x0600, i=0;     // In C prefix 0x means the number that follows is in hex
-//    long unsigned X= 123456;    // No prefix so number is assumed to be in decimal
-//    unsigned char myGrade='A';
-//    unsigned char initial='S';
-    //unsigned char your_name[14] = "Your Name Here";
-                                    // What happens when you change the array length?
-                                    // What should it be? Do you need null terminator /n ?
+// Defined in main.h
+uint32_t globalClock = monthToSeconds(0) + monthToSeconds(1) + monthToSeconds(2)
+        + monthToSeconds(3) + monthToSeconds(4) + monthToSeconds(5)
+        + dayToSeconds(4);
 
+uint32_t globalCounter = 0;
 
-    WDTCTL = WDTPW | WDTHOLD;    // Stop watchdog timer. Always need to stop this!!
-                                 // You can then configure it properly, if desired
+// Function prototypes
+void drawDate();
+void drawTime();
+void drawTempC(ADC*);
+void drawTempF(ADC*);
+void configButtons();
+unsigned char getButtonState();
+void drawDateTime(Date, Time);
+void drawUnderline(EditState);
 
-    // Some utterly useless instructions -- Step through them
-    // What size does the Code Composer MSP430 Compiler use for the
-    // following variable types? A float, an int, a long integer and a char?
+// Program entry point
+void main(void)
+{
+    // Main loop state
+    uint32_t startCounter, deltaCounter;
+    State state = DISPLAY;
+    DisplayState displayState = DATE;
+    EditState editState = MONTH;
 
-//    a_flt = a_flt*test;
-//    X = test+X;
-//    test = test-myGrade;    // A number minus a letter?? What's actually going on here?
-                            // What value stored in myGrade (i.e. what's the ASCII code for "A")?
-                            // Thus, what is the new value of test? Explain?
+    uint8_t buttonPressed, lastButtonPressed;
+    int32_t startPot, deltaPot, potMonthIncrement = 200, potMiscIncrement = 40;
 
-    // Useful code starts here
+    Date editDate, editStartDate;
+    Time editTime, editStartTime;
+
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+
+    // Set up and configure peripherals and I/O
     initLeds();
     configDisplay();
+    configButtons();
     configKeypad();
 
-    // *** Screen ***
-    Graphics_clearDisplay(&g_sContext); // Clear the display
+    ADC* adc = new ADC();
 
-    switch(game_state) {
+    // Main loop
+    while (1)
+    {
+        buttonPressed = getButtonState();
 
-    case START_SCREEN: // Display welcome screen
-    
-        Graphics_drawStringCentered(&g_sContext, "SPACE INVADERS", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
-        Graphics_drawStringCentered(&g_sContext, "Press * to Start", AUTO_STRING_LENGTH, 48, 56, TRANSPARENT_TEXT);
-        Graphics_flushBuffer(&g_sContext);
-        swDelay(5);
-        // Graphics_clearDisplay(&g_sContext); // Clear the display
-        game_state = COUNTDOWN;
+        switch (case)
+        {
+        case 0  //DISPLAY:
+            // Save initial time
+            startCounter = globalCounter;
+            // Draw parameters
+            switch (displayCase)
+            {
+            case 1//DAT:
+                drawDate();
+                break;
+            case 2//TIME:
+                drawTime();
+                break;
+            case 3 // TEMP_C:
+                drawTempC(adc);
+                break;
+            case 4 //TEMP_F:
+                drawTempF(adc);
+                break;
+            }
+            case = 5 //WAIT_FOR_TRANSITION;
+            break;
+        case 5 //WAIT_FOR_TRANSITION:
+            // If the left lab board button is pressed, go to edit mode
+            if (buttonPressed & BIT0)
+            {
+                case = BEGIN_EDIT;
+            }
+            // Elapsed time
+            deltaCounter = globalCounter - startCounter;
+            // Display next parameter if 2 seconds have elapsed
+            if (deltaCounter >= 2)
+            {
+                switch (displayCase)
+                {
+                case 6//DATE:
+                    displayCase = 7;
+                    break;
+                case 7//TIME:
+                    displayCase = 8;
+                    break;
+                case 8//TEMP_C:
+                    displayCase = 9;
+                    break;
+                case 9//TEMP_F:
+                    displayCase = 6;
+                    break;
+                }
+                case = 0; //DISPLAY;
+            }
+            break;
 
+	case 10:   //BEGIN_EDIT:
+            // Declare variables that'll store edited values
+            editDate = currentDate();
+            editStartDate = currentDate();
+            editTime = currentTime();
+            editStartTime = currentTime();
 
-        // Check if any keys have been pressed on the 3x4 keypad
-        currKey = getKey();
-           if (currKey == '*') {
-              game_state = COUNTDOWN;
-              Graphics_clearDisplay(&g_sContext); // Clear the display
-              Graphics_drawStringCentered(&g_sContext, "Going", AUTO_STRING_LENGTH, 48, 56, TRANSPARENT_TEXT);
-              Graphics_flushBuffer(&g_sContext);
-           }
-    break;
-    
+            //Save initial value of the potentiometer
+            startPot = adc->getCurrentPot();
 
-
-    case COUNTDOWN: // Intermediate state before level 1
-    
-        Graphics_drawStringCentered(&g_sContext, "GOT HERE", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
-        Graphics_flushBuffer(&g_sContext);
-        swDelay(5);
-        Graphics_clearDisplay(&g_sContext); // Clear the display
-
-       if (n < 10) {
-           Graphics_drawStringCentered(&g_sContext, "3", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
-           Graphics_flushBuffer(&g_sContext);
-
-       }
-       else if ((n > 10) && (n < 20)) {
-           Graphics_drawStringCentered(&g_sContext, "2", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
-           Graphics_flushBuffer(&g_sContext);
-           dispThree[0] = ' ';
-           dispThree[2] = ' ';
-       }
-       else if (n > 20 && n < 30) {
-           Graphics_drawStringCentered(&g_sContext, "1", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
-           Graphics_flushBuffer(&g_sContext);
-           dispThree[0] = ' ';
-           dispThree[2] = ' ';
-       }
-       else if (n > 30) {
-           game_state = LEVEL_1;
-       }
-
-       n = n + 1;
-
-       if (game_state == LEVEL_1){
-           n = 0;
-       }
-       break;
-    
-
-
-    case LEVEL_1:
-    
-
-        Graphics_drawStringCentered(&g_sContext, "1", AUTO_STRING_LENGTH, 8, 5, TRANSPARENT_TEXT);
-        Graphics_flushBuffer(&g_sContext);
-        dispThree[0] = ' ';
-        dispThree[2] = ' ';
-    
-
-
-    case LEVEL_2:
-
-    case LEVEL_3:
-
-    case LEVEL_4:
-
-    case LEVEL_5:
-
-    case WIN_SCREEN:
-
-        while (i < 15) {
-        Graphics_drawStringCentered(&g_sContext, "CONGRATULATIONS!", AUTO_STRING_LENGTH, 48, 48, TRANSPARENT_TEXT);
-        Graphics_drawStringCentered(&g_sContext, "YOU WON!", AUTO_STRING_LENGTH, 48, 32, TRANSPARENT_TEXT);
-        Graphics_flushBuffer(&g_sContext);
-        dispThree[0] = ' ';
-        dispThree[2] = ' ';
-
-        BuzzerOn();
-        setLeds(currKey - 0x30);
-        swDelay(1);
-        BuzzerOff();
-        setLeds(currKey - 0x30);
-        swDelay(1);
-        BuzzerOn();
-        setLeds(currKey - 0x30);
-        swDelay(1);
-        BuzzerOff();
-        setLeds(currKey - 0x30);
-        swDelay(1);
-        BuzzerOn();
-        setLeds(currKey - 0x30);
-        swDelay(1);
-        BuzzerOff();
-        setLeds(currKey - 0x30);
-        swDelay(1);
-        BuzzerOn();
-        setLeds(currKey - 0x30);
-        swDelay(5);
-        BuzzerOff();
-        setLeds(currKey - 0x30); //10 might not be allowed, maybe A? Maybe needs to be 9 or less
-        swDelay(4);
-        i = i + 1;
+            case = 11;
+            break;
+	case 11: //DRAW_EDIT:
+            // Draw current date and time
+            drawDateTime(editDate, editTime);
+            // Draw line under currently selected time division
+            drawUnderline(editCase);
+            Case = 12;
+            break;
+	case 12: // EDIT:
+            // If new button is pressed
+            if (buttonPressed != lastButtonPressed)
+            {
+                // Left button, go to next time division
+                if (buttonPressed & BIT0)
+                {
+                    editState = (EditState) ((editState + 1) % 5);
+                    // Reset potentiometer input every time we transition between edit states
+                    startPot = adc->getCurrentPot();
+                    editStartDate = editDate;
+                    editStartTime = editTime;
+                    case = 11; //DRAW_EDIT;
+                }
+                // Right button, exit edit state
+                if (buttonPressed & BIT1)
+                {
+                    // Save time to global time, then switch back to DISPLAY
+                    // and set display state to DATE
+                    globalClock = dateToSeconds(editDate)
+                            + timeToSeconds(editTime);
+                    case = 0; //Display
+                    displayCase = 6;
+                    break;
+                }
+            }
+            else
+            {
+                // Difference in potentiometer position
+                deltaPot = adc->getCurrentPot() - startPot;
+                // Scroll mode
+                switch (editState)
+                {
+                case MONTH:     // Edit month
+                    uint32_t month = deltaNumber(editStartDate.month, 0, 11, deltaPot, potMonthIncrement);
+                    if (month != editDate.month)
+                    {
+                        editDate.month = month;
+                        state = DRAW_EDIT;
+                    }
+                    break;
+                case DAY:     // Edit day
+                    uint32_t day = deltaNumber(editStartDate.day, 1, monthDayCounts[editDate.month], deltaPot, potMiscIncrement);
+                    if (day != editDate.day)
+                    {
+                        editDate.day = day;
+                        state = DRAW_EDIT;
+                    }
+                    break;
+                case HOUR:   // Edit hour
+                    uint32_t hour = deltaNumber(editStartTime.hours, 0, 23, deltaPot, potMiscIncrement);
+                    if (hour != editTime.hours)
+                    {
+                        editTime.hours = hour;
+                        state = DRAW_EDIT;
+                    }
+                    break;
+                case MINUTE: // Edit minute
+                    uint32_t minutes = deltaNumber(editStartTime.minutes, 0, 59, deltaPot, potMiscIncrement);
+                    if (minutes != editTime.minutes)
+                    {
+                        editTime.minutes = minutes;
+                        state = DRAW_EDIT;
+                    }
+                    break;
+                case SECOND: // Edit month
+                    uint32_t seconds = deltaNumber(editStartTime.seconds, 0, 59, deltaPot, potMiscIncrement);
+                    if (seconds != editTime.seconds)
+                    {
+                        editTime.seconds = seconds;
+                        state = DRAW_EDIT;
+                    }
+                    break;
+                }
+            }
+            break;
         }
-        if (i == 15) {
-            game_state = START_SCREEN;
-            i = 0;
-        }
-        break;
-
-    case DEATH_SCREEN:
-
-        while (i < 15) {
-        Graphics_drawStringCentered(&g_sContext, "GAME OVER", AUTO_STRING_LENGTH, 48, 40, TRANSPARENT_TEXT);
-        Graphics_flushBuffer(&g_sContext);
-        dispThree[0] = ' ';
-        dispThree[2] = ' ';
-
-        BuzzerOn();
-        swDelay(3);
-        BuzzerOff();
-        swDelay(1);
-        BuzzerOn();
-        swDelay(1);
-        BuzzerOff();
-        swDelay(1);
-        BuzzerOn();
-        swDelay(1);
-        BuzzerOff();
-        swDelay(1);
-        BuzzerOn();
-        swDelay(1);
-        BuzzerOff();
-        swDelay(2);
-        i = i + 1;
-        }
-
-        if (i == 15) {
-           game_state = START_SCREEN;
-           i = 0;
-        }
-        break;
+        lastButtonPressed = buttonPressed;
     }
-
-
-
-    // Write some text to the display (lab 0 and test stuff)
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 88, 5, TRANSPARENT_TEXT); // X axes are from 10 to 90 (spaces we can use with this size of letter, increase left to right)
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 72, 5, TRANSPARENT_TEXT); // Y axes we can use are 5 to 85 (increase top to bottom)
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 56, 5, TRANSPARENT_TEXT); // Gives us 9 columns and 9 rows to work with, but need 5 columns, x amount of rows
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 40, 5, TRANSPARENT_TEXT); // Have a distance of 16 between each alien
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 24, 5, TRANSPARENT_TEXT); // Need to fix these x-values to have only 5 spaces
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 8, 5, TRANSPARENT_TEXT);
-//    Graphics_drawStringCentered(&g_sContext, "W", AUTO_STRING_LENGTH, 8, 5, TRANSPARENT_TEXT);
-
-
-
-
-//    Graphics_drawStringCentered(&g_sContext, "CONGRATULATIONS!", AUTO_STRING_LENGTH, 48, 48, TRANSPARENT_TEXT);
-//           Graphics_drawStringCentered(&g_sContext, "YOU WON!", AUTO_STRING_LENGTH, 48, 32, TRANSPARENT_TEXT);
-//           Graphics_flushBuffer(&g_sContext);
-//
-//           dispThree[0] = ' ';
-//           dispThree[2] = ' ';
-//           BuzzerOn();
-//           setLeds('5' - 0x30); // 5 - 0x30
-//           swDelay(1);
-//           BuzzerOff();
-//           setLeds('9' - 0x30);
-//           swDelay(1);
-//           BuzzerOn();
-//           setLeds('5' - 0x30);
-//           swDelay(1);
-//           BuzzerOff();
-//           setLeds('9' - 0x30);
-//           swDelay(1);
-//           BuzzerOn();
-//           setLeds('5' - 0x30);
-//           swDelay(1);
-//           BuzzerOff();
-//           setLeds('9' - 0x30);
-//           swDelay(1);
-//           BuzzerOn();
-//           setLeds('5' - 0x30);
-//           swDelay(5);
-//           BuzzerOff();
-//           setLeds('9' - 0x30); //10 might not be allowed, maybe A? Maybe needs to be 9 or less
-//           swDelay(4);
-
-
-//    Graphics_drawStringCentered(&g_sContext, "to", AUTO_STRING_LENGTH, 48, 25, TRANSPARENT_TEXT);
-//    Graphics_drawStringCentered(&g_sContext, "ECE2049-A21!", AUTO_STRING_LENGTH, 48, 35, TRANSPARENT_TEXT);
-
-    // Draw a box around everything because it looks nice
-//    Graphics_Rectangle box = {.xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
-//    Graphics_drawRectangle(&g_sContext, &box);
-
-    // We are now done writing to the display.  However, if we stopped here, we would not
-    // see any changes on the actual LCD.  This is because we need to send our changes
-    // to the LCD, which then refreshes the display.
-    // Since this is a slow operation, it is best to refresh (or "flush") only after
-    // we are done drawing everything we need.
-//    Graphics_flushBuffer(&g_sContext);
-//
-//    dispThree[0] = ' ';
-//    dispThree[2] = ' ';
-
-//    while (1)    // Forever loop
-//    {
-//        // Check if any keys have been pressed on the 3x4 keypad
-//        currKey = getKey();
-//        if (currKey == '*')
-//            BuzzerOn();
-//        if (currKey == '#')
-//            BuzzerOff();
-//        if ((currKey >= '0') && (currKey <= '9'))
-//            setLeds(currKey - 0x30);
-//
-//        if (currKey)
-//        {
-//            dispThree[1] = currKey;
-//            // Draw the new character to the display
-//            Graphics_drawStringCentered(&g_sContext, dispThree, dispSz, 48, 55, OPAQUE_TEXT);
-//
-//            // Refresh the display so it shows the new data
-//            Graphics_flushBuffer(&g_sContext);
-//
-//            // wait awhile before clearing LEDs
-//            swDelay(1);
-//            setLeds(0);
-//        }
-
-//    }  // end while (1)
 }
 
-
-void swDelay(char numLoops)
+// Draw date
+void drawDate()
 {
-	// This function is a software delay. It performs
-	// useless loops to waste a bit of time
-	//
-	// Input: numLoops = number of delay loops to execute
-	// Output: none
-	//
-	// smj, ECE2049, 25 Aug 2021
+    Graphics_clearDisplay(&g_sContext);
 
-	volatile unsigned int i,j;	// volatile to prevent removal in optimization
-			                    // by compiler. Functionally this is useless code
+    Date date = currentDate();
+    const char* month = monthNames[date.month];
 
-	for (j=0; j<numLoops; j++)
+    char dBuffer[6];
+    dBuffer[0] = month[0];
+    dBuffer[1] = month[1];
+    dBuffer[2] = month[2];
+    dBuffer[3] = ' ';
+    dBuffer[4] = date.day / 10 % 10 + '0';
+    dBuffer[5] = date.day % 10 + '0';
+
+    Graphics_drawStringCentered(&g_sContext, (uint8_t*) dBuffer, 6, 48, 25,
+    TRANSPARENT_TEXT);
+
+    Graphics_Rectangle box = { .xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
+    Graphics_drawRectangle(&g_sContext, &box);
+    Graphics_flushBuffer(&g_sContext);
+}
+
+// Draw time
+void drawTime()
+{
+    Graphics_clearDisplay(&g_sContext);
+
+    Time time = currentTime();
+
+    char dBuffer[8];
+    dBuffer[0] = time.hours / 10 % 10 + '0';
+    dBuffer[1] = time.hours % 10 + '0';
+    dBuffer[2] = ':';
+    dBuffer[3] = time.minutes / 10 % 10 + '0';
+    dBuffer[4] = time.minutes % 10 + '0';
+    dBuffer[5] = ':';
+    dBuffer[6] = time.seconds / 10 % 10 + '0';
+    dBuffer[7] = time.seconds % 10 + '0';
+
+    Graphics_drawStringCentered(&g_sContext, (uint8_t*) dBuffer, 8, 48, 25,
+    TRANSPARENT_TEXT);
+
+    Graphics_Rectangle box = { .xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
+    Graphics_drawRectangle(&g_sContext, &box);
+    Graphics_flushBuffer(&g_sContext);
+}
+
+// Draw temperature in Celsius
+void drawTempC(ADC* adc)
+{
+    Graphics_clearDisplay(&g_sContext);
+
+    float tempC = adc->getCurrentTempC();
+
+    char dBuffer[6];
+    dBuffer[0] = (uint8_t) tempC / 10 % 10 + '0';
+    dBuffer[1] = (uint8_t) tempC % 10 + '0';
+    dBuffer[2] = '.';
+    dBuffer[3] = (uint8_t) (tempC * 10) % 10 + '0';
+    dBuffer[4] = ' ';
+    dBuffer[5] = 'C';
+
+    Graphics_drawStringCentered(&g_sContext, (uint8_t*) dBuffer, 6, 48, 25,
+    TRANSPARENT_TEXT);
+
+    Graphics_Rectangle box = { .xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
+    Graphics_drawRectangle(&g_sContext, &box);
+    Graphics_flushBuffer(&g_sContext);
+}
+
+// Draw temperature in Farenheit
+void drawTempF(ADC* adc)
+{
+    Graphics_clearDisplay(&g_sContext);
+
+    float tempF = adc->getCurrentTempF();
+
+    char dBuffer[6];
+    dBuffer[0] = (uint8_t) tempF / 10 % 10 + '0';
+    dBuffer[1] = (uint8_t) tempF % 10 + '0';
+    dBuffer[2] = '.';
+    dBuffer[3] = (uint8_t) (tempF * 10) % 10 + '0';
+    dBuffer[4] = ' ';
+    dBuffer[5] = 'F';
+
+    Graphics_drawStringCentered(&g_sContext, (uint8_t*) dBuffer, 6, 48, 25,
+    TRANSPARENT_TEXT);
+
+    Graphics_Rectangle box = { .xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
+    Graphics_drawRectangle(&g_sContext, &box);
+    Graphics_flushBuffer(&g_sContext);
+}
+
+// Draw date and time
+void drawDateTime(Date date, Time time)
+{
+    Graphics_clearDisplay(&g_sContext);
+
+    const char* month = monthNames[date.month];
+
+    char dBuffer[6];
+    dBuffer[0] = month[0];
+    dBuffer[1] = month[1];
+    dBuffer[2] = month[2];
+    dBuffer[3] = ' ';
+    dBuffer[4] = date.day / 10 % 10 + '0';
+    dBuffer[5] = date.day % 10 + '0';
+
+    char tBuffer[8];
+    tBuffer[0] = time.hours / 10 % 10 + '0';
+    tBuffer[1] = time.hours % 10 + '0';
+    tBuffer[2] = ':';
+    tBuffer[3] = time.minutes / 10 % 10 + '0';
+    tBuffer[4] = time.minutes % 10 + '0';
+    tBuffer[5] = ':';
+    tBuffer[6] = time.seconds / 10 % 10 + '0';
+    tBuffer[7] = time.seconds % 10 + '0';
+
+    Graphics_drawStringCentered(&g_sContext, (uint8_t*) dBuffer, 6, 48, 25,
+    TRANSPARENT_TEXT);
+    Graphics_drawStringCentered(&g_sContext, (uint8_t*) tBuffer, 8, 48, 55,
+    TRANSPARENT_TEXT);
+
+    Graphics_Rectangle box = { .xMin = 5, .xMax = 91, .yMin = 5, .yMax = 91 };
+    Graphics_drawRectangle(&g_sContext, &box);
+    Graphics_flushBuffer(&g_sContext);
+}
+
+// Draw selection line
+void drawUnderline(EditState state)
+{
+    switch (state)
     {
-    	i = 50000 ;					// SW Delay
-   	    while (i > 0)				// could also have used while (i)
-	       i--;
+    case MONTH:
+        Graphics_drawLineH(&g_sContext, 30, 46, 32);
+        break;
+    case DAY:
+        Graphics_drawLineH(&g_sContext, 52, 66, 32);
+        break;
+    case HOUR:
+        Graphics_drawLineH(&g_sContext, 23, 35, 62);
+        break;
+    case MINUTE:
+        Graphics_drawLineH(&g_sContext, 41, 53, 62);
+        break;
+    case SECOND:
+        Graphics_drawLineH(&g_sContext, 59, 71, 62);
+        break;
     }
+    Graphics_flushBuffer(&g_sContext);
+}
+
+// Configure lab board buttons
+void configButtons()
+{
+    // Left Button
+    P2SEL &= ~(BIT1); // Select pin for DI/O
+    P2DIR &= ~(BIT1); // Set pin as input
+    P2REN |= (BIT1); // Enable input resistor
+    P2OUT |= (BIT1); // Set resistor to pull up
+
+    // Right Button
+    P1SEL &= ~(BIT1); // Select pin for DI/O
+    P1DIR &= ~(BIT1); // Set pin as input
+    P1REN |= (BIT1); // Enable input resistor
+    P1OUT |= (BIT1); // Set resistor to pull up
+}
+
+// Get the state of the lab board buttons
+unsigned char getButtonState()
+{
+    unsigned char ret = 0x00;
+    // P2.1
+    if (~P2IN & BIT1)
+        ret |= BIT0; // Left button (S1)
+    // P1.1
+    if (~P1IN & BIT1)
+        ret |= BIT1; // Right button (S2)
+    return ret;
 }
