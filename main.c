@@ -4,6 +4,8 @@
 
 #include <msp430.h>
 
+//STILL NEEDS TO BE TESTED AND CONFIRMED W/ A LAB TA :) BUT MIGHT BE DONE! 
+
 /* Peripherals.c and .h are where the functions that implement
  * the LEDs and keypad, etc are. It is often useful to organize
  * your code by putting like functions together in files.
