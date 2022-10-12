@@ -4,7 +4,7 @@
 
 #include <msp430.h>
 
-//STILL NEEDS TO BE TESTED AND CONFIRMED W/ A LAB TA :) BUT MIGHT BE DONE! 
+//STILL NEEDS TO BE TESTED AND CONFIRMED W/ A LAB TA :) BUT MIGHT BE DONE!
 
 /* Peripherals.c and .h are where the functions that implement
  * the LEDs and keypad, etc are. It is often useful to organize
@@ -91,7 +91,7 @@ int main(void)
     volatile unsigned int bits30, bits85;
     float potVolts;
     char button = '0';
-    unsigned char currKey=0;
+    char currKey= '0';
     bits30 = CALADC12_15V_30C;
     bits85 = CALADC12_15V_85C;
     float x =  ((float)(85.0 - 30.0)); // 85.0 - 30.0
@@ -115,30 +115,30 @@ int main(void)
                          Graphics_drawStringCentered(&g_sContext, "3=Sawtooth Wave", AUTO_STRING_LENGTH, 48, 45, TRANSPARENT_TEXT); // Display welcome screen
                          Graphics_drawStringCentered(&g_sContext, "4=Triangle Wave", AUTO_STRING_LENGTH, 48, 55, TRANSPARENT_TEXT); // Display welcome screen
                          Graphics_flushBuffer(&g_sContext);
-                         currKey = buttonsPressed();
+                         currKey = getKeys(); //buttonsPressed();
 
-                         if (currKey == 1) {
+                         if (currKey == '1') {
                              Graphics_clearDisplay(&g_sContext); // Clear the display
                              Graphics_drawStringCentered(&g_sContext, "DC", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
                              Graphics_flushBuffer(&g_sContext);
 //                             lightUserLED(1);
                              state = 1;
                          }
-                         if(currKey == 2){
+                         if(currKey == '2'){
                              Graphics_clearDisplay(&g_sContext); // Clear the display
                              Graphics_drawStringCentered(&g_sContext, "SQUARE", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
                              Graphics_flushBuffer(&g_sContext);
 //                             lightUserLED(1);
                              state = 2;
                          }
-                         if(currKey == 3){
+                         if(currKey == '3'){
                              Graphics_clearDisplay(&g_sContext); // Clear the display
                              Graphics_drawStringCentered(&g_sContext, "SAWTOOTH", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
                              Graphics_flushBuffer(&g_sContext);
 //                             lightUserLED(1);
                              state = 3;
                          }
-                         if(currKey == 4){
+                         if(currKey == '4'){
                              Graphics_clearDisplay(&g_sContext); // Clear the display
                              Graphics_drawStringCentered(&g_sContext, "TRIANGLE", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
                              Graphics_flushBuffer(&g_sContext);
@@ -154,6 +154,10 @@ int main(void)
                          //ADCconfigP61andSC();
                          DACSetValue(adc_scrollWheel); // We only need to call this once and it will constantly send of the value we want
                          ADCconfigP61andSC();
+                         currKey = getKeys();
+                         if (currKey == '*'){
+                             state = 0;
+                         }
                          break;
                      }
                      case 2:
@@ -161,6 +165,10 @@ int main(void)
                          unsigned int dacCodes[2] = {0, adc_scrollWheel}; // adc_scrollWheel
 
                          last_cnt = timer_cnt;
+                         currKey = getKeys();
+                         if (currKey == '*'){
+                             state = 0;
+                         }
 //                         while ((timer_cnt % (last_cnt + 13)) != 0) {
 //
 //                             tmp = dacCodes[indexSquare%2];
@@ -169,7 +177,15 @@ int main(void)
 //
 //                         }
                          while (timer_cnt < last_cnt + 59){// 13 for 0.0005
-                             __no_operation();
+//                             __no_operation();
+                             currKey = getKeys();
+                             if (currKey == '*'){
+                                 state = 0;
+                             }
+                             else {
+                                 __no_operation();
+                             }
+
                          }
                          DACSetValue(dacCodes[indexSquare%2]);
                          indexSquare++;
@@ -195,6 +211,10 @@ int main(void)
 
                              volts_code = ((timer_cnt % 133)*30);
                              DACSetValue(volts_code);
+                             currKey = getKeys();
+                             if (currKey == '*'){
+                                 state = 0;
+                             }
 //                           volts_code = ((val % 133)*30); //133, 30
 //
 //
@@ -219,19 +239,47 @@ int main(void)
 
 //                         timer_cnt = 0;
 //                         runtimerA2();
+                         currKey = getKeys();
+                         if (currKey == '*'){
+                             state = 0;
+                         }
+                         buzzerOn(400);
                          for (i=0; i<=16; i++) { // 50
                              DACSetValue(dac_Codes[i]);
                              oneInterrupt = timer_cnt;
+                             currKey = getKeys();
+                             if (currKey == '*'){
+                                 state = 0;
+                             }
                              while (timer_cnt == oneInterrupt) {
-                                 __no_operation();
+//                                 __no_operation();
+                                 currKey = getKeys();
+                                 if (currKey == '*'){
+                                     state = 0;
+                                 }
+                                 else{
+                                     __no_operation();
+                                 }
                              }
 
                          }
                          for (i=15; i>=0; i--) { // 49
                              DACSetValue(dac_Codes[i]);
                              oneInterrupt = timer_cnt;
+                             currKey = getKeys();
+                             if (currKey == '*'){
+                                 state = 0;
+                             }
                              while (timer_cnt == oneInterrupt) {
-                                 __no_operation();
+//                                 __no_operation();
+                                 currKey = getKeys();
+                                 if (currKey == '*'){
+                                      state = 0;
+                                  }
+                                 else{
+                                     __no_operation();
+                                 }
+
                              }
 
                          }
