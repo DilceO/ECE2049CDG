@@ -131,14 +131,14 @@ int main(void)
 //                             lightUserLED(1);
                              state = 2;
                          }
-                         if(currKey == 4){
+                         if(currKey == 3){
                              Graphics_clearDisplay(&g_sContext); // Clear the display
                              Graphics_drawStringCentered(&g_sContext, "SAWTOOTH", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
                              Graphics_flushBuffer(&g_sContext);
 //                             lightUserLED(1);
                              state = 3;
                          }
-                         if(currKey == 8){
+                         if(currKey == 4){
                              Graphics_clearDisplay(&g_sContext); // Clear the display
                              Graphics_drawStringCentered(&g_sContext, "TRIANGLE", AUTO_STRING_LENGTH, 48, 15, TRANSPARENT_TEXT);
                              Graphics_flushBuffer(&g_sContext);
